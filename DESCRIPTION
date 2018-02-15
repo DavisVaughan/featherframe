@@ -1,10 +1,12 @@
 Package: featherframe
 Type: Package
-Title: Hi
+Title: Create Pandas DataFrame and Series objects from R using 'feather' and 
+  'reticulate'.
 Version: 0.1.0
 Author: Davis Vaughan
 Maintainer: Davis Vaughan <dvaughan@business-science.io>
-Description: Hi
+Description: Create Pandas DataFrame and Series objects from R using 'feather' and 
+  'reticulate'.
 License: MIT
 Encoding: UTF-8
 LazyData: true

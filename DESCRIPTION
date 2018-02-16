@@ -5,10 +5,20 @@ Title: Create Pandas DataFrame and Series objects from R using 'feather' and
 Version: 0.1.0
 Author: Davis Vaughan
 Maintainer: Davis Vaughan <dvaughan@business-science.io>
-Description: Create Pandas DataFrame and Series objects from R using 'feather' and 
-  'reticulate'.
+Description: Python objects are created by using 'feather' to write
+  R objects to disk and then using 'reticulate' to access the Python version
+  of 'feather' to read them into Python as Pandas DataFrames and Series.
+Imports: 
+    feather,
+    reticulate,
+    tibble
+SystemRequirements: 
+    feather-format (>= 0.4.0),
+    Python (>= 2.7.0)
 License: MIT
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/DavisVaughan/featherframe
 BugReports: https://github.com/DavisVaughan/featherframe/issues
+RoxygenNote: 6.0.1
+Roxygen: list(markdown = TRUE)

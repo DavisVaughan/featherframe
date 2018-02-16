@@ -1,0 +1,174 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# featherframe
+
+Sometimes with `reticulate` you import Python libraries that require using 
+Pandas DataFrame and Series objects. Currently there is support for Numpy 
+Arrays in `reticulate`, but no support for these other objects. 
+
+`feather` is a great package that allows you to write R `tibble`s to disk, and read them
+into Python as `DataFrames`, and vice versa, with type support. Combining `reticulate` and `feather` results in a way to more easily convert R objects to Pandas DataFrame
+and Series objects for use with other libraries you might import with `reticulate`.
+It is actually surprisingly fast too!
+
+## Installation
+
+You can install `featherframe` from GitHub with:
+
+```{r gh-installation, eval = FALSE}
+# install.packages("devtools")
+devtools::install_github("DavisVaughan/featherframe")
+```
+
+Note that you will have to ensure that any Python library you want to use
+(like in the examples below) is installed on your machine. You also will need
+to ensure that `reticulate` is finding the correct version of Python, and how
+to do all of that is nicely outlined for you in their [vignette](https://rstudio.github.io/reticulate/articles/versions.html). Personally
+I have set the `RETICULATE_PYTHON` environment variable.
+
+## Example - Conversion
+
+`tibble` to `Pandas DataFrame` and back.
+
+```{r example}
+library(dplyr)
+library(featherframe)
+data("iris")
+
+# data.frame to tibble
+iris <- iris %>%
+  as_tibble()
+
+# tibble to Pandas DataFrame
+iris_pd <- iris %>%
+  as_pandas_DataFrame()
+
+iris_pd
+
+# Pandas DataFrame to tibble
+iris_tib <- iris_pd %>%
+  as_tibble()
+
+iris_tib
+
+# It works!
+identical(iris, iris_tib)
+```
+
+## Example - The Python pyfolio library
+
+The original motivation for creating this mini-package is to use to [pyfolio](https://github.com/quantopian/pyfolio) library from Quantopian right from
+R. It provides some neat financial analysis functions I was interested in testing,
+but requires you to pass in Pandas Series and DataFrame objects.
+
+Specifically, I am going to demonstrate some functionality that requires a Pandas Series
+of daily returns.
+
+```{r}
+library(reticulate)
+library(featherframe)
+library(tibbletime) # just for a test data set
+library(lubridate)
+library(dplyr)
+
+# Use reticulate to import pyfolio
+pyfolio <- import("pyfolio")
+
+# Get the FB stock dataset from tibbletime
+data(FB)
+FB
+
+# There is an issue with Dates becoming POSIXct so let's avoid that
+FB <- mutate(FB, date = as_datetime(date))
+
+# Calculate returns
+FB_returns <- FB %>%
+  mutate(returns = adjusted / lag(adjusted) - 1) %>%
+  select(date, returns) %>%
+  na.omit()
+
+# Convert to Pandas Series, specifying the index column
+FB_returns_pd <- FB_returns %>%
+  as_pandas_Series(index = date)
+
+FB_returns_pd
+
+# Use the rolling_volatility function from the current pip version of pyfolio
+rolling_vol_pd <- pyfolio$timeseries$rolling_volatility(FB_returns_pd, rolling_vol_window = 10L)
+rolling_vol_pd
+
+# Go back to R now
+rolling_vol_pd %>%
+  as_tibble() %>%
+  rename(returns_rolling_vol = returns)
+```
+
+The idea is that we can wrap these functions up to take care of all the conversion
+for us.
+
+```{r}
+pyfolio_rolling_volatility <- function(x, rolling_vol_window, ...) {
+  stopifnot(is.integer(rolling_vol_window))
+  
+  as_pandas_Series(x, ...) %>%
+    pyfolio$timeseries$rolling_volatility(rolling_vol_window) %>%
+    as_tibble()
+}
+
+pyfolio_rolling_volatility(FB_returns, 10L, index = date)
+```
+
+
+## Known issues
+
+Currently `Date` columns are translated to `datetime64[ns]` and then back as
+`POSIXct` with a local-specific timezone. This is...undesirable and should be
+fixed on the `feather` side of things.
+
+```{r}
+ex <- tibble(date_col = as.Date("2018-01-01"))
+ex_pd <- as_pandas_DataFrame(ex)
+ex_pd
+
+as_tibble(ex_pd)
+```
+
+Ordered factors do not stay ordered (but remain factors) when going back and forth.
+
+```{r}
+ex_ordered_fac <- tibble(fct = factor(c("low", "high", "med"), 
+                                      levels = c("low", "med", "high"), 
+                                      ordered = TRUE))
+ex_ordered_fac
+
+as_tibble(as_pandas_DataFrame(ex_ordered_fac))
+```
+
+Integer columns with `NA` values are coerced to numeric (double) column because
+Pandas does not have support for `NaN` values in integer columns.
+
+```{r}
+ex_int <- tibble(int_col = c(1L, 2L, 3L))
+ex_int
+
+ex_int_NA <- tibble(int_col = c(1L, 2L, 3L, NA))
+ex_int_NA
+
+as_tibble(as_pandas_DataFrame(ex_int))
+as_tibble(as_pandas_DataFrame(ex_int_NA))
+```
+
+Rownames are not preserved in the translation from R to Python.

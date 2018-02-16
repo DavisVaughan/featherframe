@@ -26,14 +26,6 @@ Example - Conversion
 
 ``` r
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 library(featherframe)
 data("iris")
 
@@ -147,17 +139,7 @@ Specifically, I am going to demonstrate some functionality that requires a Panda
 library(reticulate)
 library(featherframe)
 library(tibbletime) # just for a test data set
-#> 
-#> Attaching package: 'tibbletime'
-#> The following object is masked from 'package:stats':
-#> 
-#>     filter
 library(lubridate)
-#> 
-#> Attaching package: 'lubridate'
-#> The following object is masked from 'package:base':
-#> 
-#>     date
 library(dplyr)
 
 # Use reticulate to import pyfolio
@@ -346,10 +328,11 @@ rolling_vol_pd %>%
 #> # ... with 997 more rows
 ```
 
-The idea is that we can wrap these functions up to take care of all the conversion for us.
+The idea is that we can wrap these functions up to take care of all the conversion for us. I believe this is essentially what the `keras` package does with the Python `keras` library, but in a more efficient way than using `feather`.
 
 ``` r
 pyfolio_rolling_volatility <- function(x, rolling_vol_window, ...) {
+  pyfolio <- import("pyfolio")
   stopifnot(is.integer(rolling_vol_window))
   
   as_pandas_Series(x, ...) %>%

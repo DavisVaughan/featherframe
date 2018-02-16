@@ -357,6 +357,39 @@ pyfolio_rolling_volatility(FB_returns, 10L, index = date)
 #> # ... with 997 more rows
 ```
 
+Example - Using Pandas data analysis functionality from R
+---------------------------------------------------------
+
+``` r
+data(FANG) # also from tibbletime
+pd <- import("pandas")
+
+FANG_pd <- FANG %>%
+  mutate(date = as_datetime(date)) %>%
+  as_pandas_DataFrame()
+
+# Use Pandas to take monthly averages of every column, by symbol
+
+# Set index as "date", group by "symbol", For each month and for each symbol...take a mean of every column
+# reset_index turns the symbol and date indices back into columns so we can then convert back to R
+FANG_pd$set_index("date")$groupby("symbol")$resample("M")$mean()$reset_index() %>%
+  as_tibble()
+#> # A tibble: 192 x 8
+#>    symbol date                 open  high   low close  volume adjusted
+#>    <chr>  <dttm>              <dbl> <dbl> <dbl> <dbl>   <dbl>    <dbl>
+#>  1 AMZN   2013-01-31 00:00:00   269   272   265   268 4010781      268
+#>  2 AMZN   2013-02-28 00:00:00   264   267   261   264 3613774      264
+#>  3 AMZN   2013-03-31 00:00:00   265   268   262   266 2925285      266
+#>  4 AMZN   2013-04-30 00:00:00   263   266   260   263 3496191      263
+#>  5 AMZN   2013-05-31 00:00:00   262   265   260   263 2684114      263
+#>  6 AMZN   2013-06-30 00:00:00   274   277   271   274 2928790      274
+#>  7 AMZN   2013-07-31 00:00:00   298   301   295   299 3069859      299
+#>  8 AMZN   2013-08-31 00:00:00   292   294   289   291 1989723      291
+#>  9 AMZN   2013-09-30 00:00:00   304   307   301   305 2173440      305
+#> 10 AMZN   2013-10-31 00:00:00   325   329   321   326 3360670      326
+#> # ... with 182 more rows
+```
+
 Known issues
 ------------
 

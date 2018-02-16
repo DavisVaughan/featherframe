@@ -133,6 +133,24 @@ pyfolio_rolling_volatility <- function(x, rolling_vol_window, ...) {
 pyfolio_rolling_volatility(FB_returns, 10L, index = date)
 ```
 
+## Example - Using Pandas data analysis functionality from R
+
+```{r, message=FALSE}
+data(FANG) # also from tibbletime
+pd <- import("pandas")
+
+FANG_pd <- FANG %>%
+  mutate(date = as_datetime(date)) %>%
+  as_pandas_DataFrame()
+
+# Use Pandas to take monthly averages of every column, by symbol
+
+# Set index as "date", group by "symbol", For each month and for each symbol...take a mean of every column
+# reset_index turns the symbol and date indices back into columns so we can then convert back to R
+FANG_pd$set_index("date")$groupby("symbol")$resample("M")$mean()$reset_index() %>%
+  as_tibble()
+```
+
 
 ## Known issues
 

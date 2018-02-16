@@ -4,11 +4,12 @@
 #'
 NULL
 
-
+# Make a temp feather file
 temp_feather <- function(x) {
   tempfile(fileext = "feather")
 }
 
+# Write R -> Feather -> Read Python DataFrame
 feather_switch_r_to_py <- function(x) {
 
   tf <- temp_feather()
@@ -20,8 +21,7 @@ feather_switch_r_to_py <- function(x) {
   PY_FEATHER$read_dataframe(tf)
 }
 
-
-
+# Write Python DataFrame -> Feather -> R
 feather_switch_py_to_r <- function(x) {
 
   tf <- temp_feather()
@@ -32,7 +32,6 @@ feather_switch_py_to_r <- function(x) {
   # Read feather to R
   feather::read_feather(tf)
 }
-
 
 
 # Ripped safely to always return `otherwise` on failure and not report errors
@@ -51,8 +50,6 @@ safely <- function (.f, otherwise = NULL) {
 
   function(...) capture_error(.f(...), otherwise)
 }
-
-
 
 # Return the character quo or just "NULL"
 quo_name_safely <- safely(rlang::quo_name, "NULL")
